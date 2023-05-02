@@ -3,7 +3,13 @@ Sire Melk sponsored Script for:
 * creating .csv dictionary of relative paths and filenames in target folder
 * sorting files in accordance with .csv dictionary into folders.
 
+.csv here are a baseline - the way textures are referenced in game bundles. 
+- Full - has all files as they are described in bundles - with a lot of duplicates (hence only copy mode works with it as it should) You probably don't want it unless you want to turn your 16k files limn export into a 93k+ ~150GB monstrosity.
+- Unduped by data - Only unique files remain, they are still end up clustered by object. Especially fo character parts and weapons (they seem not to suffer  duplication almost at all) Typical folder contains all textures: diffuse, normal map, AO/Metallic/Roughness combo, alpha maps for skins and all that jazz. Unduped slims Update9 textures from 16k to 15k (1k difference is the files with distinct names, but byte-to-byte copies of other textures, mainly huge mono-colored 4k*4k squares and a million of identical ui icons)
+
 Usage:
+As prerequisite you extract DarkTide textures with [limn](https://github.com/ManShanko/limn). You'll plug folder with textures as input for sorting.
+
 Right click this thing and select "Run with PowerShell". You will be prompted with two choices:
 1. [S]ort Textures
    - dialog to choose input folder with your textures(can be nested and whatnot)
