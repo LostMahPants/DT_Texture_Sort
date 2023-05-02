@@ -181,13 +181,13 @@ function Create-Dictionary ($pth){
 	#{} | Select "filename","path" | Export-Csv $csvPath
 	$rows = @()
 	#move working location to texture folder to get relative paths
-	Push-Location $pth
+	Push-Location -LiteralPath $pth
 	
 	$i =0
-	Get-ChildItem $pth -Recurse -File -include *.dds,*.bmp,*.png | ForEach-Object {   
+	Get-ChildItem -LiteralPath $pth -Recurse -File -include *.dds,*.bmp,*.png | ForEach-Object {   
 	
 		#get relative path
-	    $rel = Resolve-Path -Path $_.DirectoryName -Relative
+	    $rel = Resolve-Path -LiteralPath $_.DirectoryName -Relative
 		
 		#append data
 		$rows += [pscustomobject]@{
@@ -207,7 +207,7 @@ function Create-Dictionary ($pth){
 	#return working location back
 	Pop-Location
 	#write files and paths into .csv
-	$rows | Export-Csv -Path $csvPath -NoTypeInformation
+	$rows | Export-Csv -LiteralPath $csvPath -NoTypeInformation
 	
 	Write-ColorHost green "`nDone. $i files found, dictionary $csvName created.`n"
 	return $true
@@ -216,33 +216,49 @@ function Create-Dictionary ($pth){
 ###
 function Sort-Textures ($inPth, $outPth, $dictPth, $move){
 	
-	$csv = Import-Csv -Path $dictPth
+	if (!(Test-Path -LiteralPath $dictPth)) { 
+	Write-ColorHost red "ERR: $dictPth can not be resolved"
+	return $false }
+
+	$csv = Import-Csv -LiteralPath $dictPth
+	
+	if (!$csv){
+		Write-ColorHost red " ERR:No .csv loaded."
+		return $false}
 	
 	#move working location to texture folder to get relative paths
-	Push-Location $outPth
+	Push-Location -LiteralPath $outPth
 	
 	$csvL = $csv.Length
-	$inF = (Get-ChildItem $inPth -Recurse -File | Measure-Object).Count
+	$inF = (Get-ChildItem -LiteralPath $inPth -Recurse -File | Measure-Object).Count
 	
 	if ($csvL -ge $inF){ Write-ColorHost green "`n $csvL in dictionary / $inF in input`n"}
-	else {  Write-ColorHost red "`n Dictionary has less files than input folder! $csvL in dictionary / $inF in input`n"}
+	else {  Write-ColorHost yellow "`n Dictionary has less files than input folder! $csvL in dictionary / $inF in input`n"}
 	
 	$i = 0
 	$j = 0
 	#iterate through csv rows
 	foreach ($file in $csv){
 		$i++
+		
 		#get output path
 		$pth = [IO.Path]::GetFullPath([IO.Path]::Combine((Get-Location -PSProvider FileSystem).ProviderPath, $file.path))
 		#create subfolder if doesn't exist
-		If(!(test-path -PathType container $pth)){New-Item -ItemType Directory -Path $pth | Out-Null }
+		If(!(test-path -PathType container -LiteralPath $pth)){New-Item -ItemType Directory -Path $pth | Out-Null }
 		#find file in input folder recursively and move or copy it to output
-		Get-ChildItem $inPth -Recurse -File -Filter ($file.filename + '*') | ForEach-Object {   
+		
+		if ([string]::IsNullOrEmpty($file.filename)) {
+			Write-ColorHost red " ERR: Empty rows in .csv?"
+			return $false
+			
+		}
+		
+		Get-ChildItem -LiteralPath $inPth  -Recurse -File -Filter ($file.filename + '*') | ForEach-Object {   
 		    
 			if ($move){
-				Move-Item $_.FullName -Destination $pth
+				Move-Item -LiteralPath $_.FullName -Destination $pth
 			}else{
-				Copy-Item $_.FullName -Destination $pth
+				Copy-Item -LiteralPath $_.FullName -Destination $pth
 			}
 			$j++
 		}
